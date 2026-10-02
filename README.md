@@ -1,4 +1,4 @@
-# 🛠️ Code Debugger
+# 🛠️ Code Debuger
 
 An AI-powered developer tool that analyzes code errors, explains what went wrong, and helps generate corrected code.
 
@@ -39,7 +39,7 @@ Run / Review Corrected Code
 
 ## 🎯 Use Case
 
-Code Debugger is designed to help developers and students quickly understand programming errors instead of only receiving confusing compiler or runtime messages.
+Code Debuger is designed to help developers and students quickly understand programming errors instead of only receiving confusing compiler or runtime messages.
 
 ## 🚀 Live Application
 
