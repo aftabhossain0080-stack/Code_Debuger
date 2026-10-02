@@ -2,141 +2,196 @@ import { DemoExample, ErrorExplanation } from '../types';
 
 export const DEMO_EXAMPLES: DemoExample[] = [
   {
-    id: 'js-typeerror',
-    label: 'JavaScript: TypeError',
-    language: 'JavaScript',
-    error: "TypeError: Cannot read properties of undefined (reading 'name')",
+    id: 'py-missing-bracket',
+    label: 'Missing Bracket',
+    language: 'Python',
+    error: 'name = "Aftab"\nprint(name',
+  },
+  {
+    id: 'py-missing-quote',
+    label: 'Missing Quote',
+    language: 'Python',
+    error: 'name = "Aftab\nprint(name)',
+  },
+  {
+    id: 'py-wrong-indentation',
+    label: 'Wrong Indentation',
+    language: 'Python',
+    error: 'def greet():\nprint("Hello")',
   },
   {
     id: 'py-nameerror',
-    label: "Python: NameError ('pd')",
+    label: 'NameError',
     language: 'Python',
-    error: "NameError: name 'pd' is not defined",
+    error: 'x = 10\nprint(y)',
   },
   {
-    id: 'py-indexerror',
-    label: 'Python: IndexError',
+    id: 'py-typeerror',
+    label: 'TypeError',
     language: 'Python',
-    error: 'IndexError: list index out of range',
+    error: 'age = "25"\ntotal = age + 5\nprint(total)',
   },
   {
-    id: 'py-keyerror',
-    label: "Python: KeyError ('age')",
+    id: 'py-operator-syntax',
+    label: 'Trailing Operator',
     language: 'Python',
-    error: "KeyError: 'age'",
+    error: 'x = 10\ny = 20\nprint(x +)',
+  },
+  {
+    id: 'py-correct-code',
+    label: 'Correct Code',
+    language: 'Python',
+    error: 'name = "Aftab"\nprint(name)',
+  },
+  {
+    id: 'js-typeerror',
+    label: 'JavaScript: TypeError',
+    language: 'JavaScript',
+    error: 'const user = undefined;\nconsole.log(user.name);',
   },
 ];
 
 export const FALLBACK_EXPLANATIONS: Record<string, ErrorExplanation> = {
-  "TypeError: Cannot read properties of undefined (reading 'name')": {
+  'name = "Aftab"\nprint(name': {
+    hasError: true,
+    errorType: 'SyntaxError',
+    errorLine: 2,
+    errorMessage: "(' was never closed",
+    language: 'Python',
+    severity: 'Error',
+    whatHappened: "SyntaxError — '(' was never closed.",
+    whyDidItHappen: "The closing ')' is missing from the print() function.",
+    howCanIFixIt: "Add a closing parenthesis ')' at the end of print(name).",
+    suggestedSolutionSummary: "Added the missing closing parenthesis.",
+    solution: {
+      before: 'name = "Aftab"\nprint(name',
+      after: 'name = "Aftab"\nprint(name)',
+    },
+    confidence: 'High',
+  },
+
+  'name = "Aftab\nprint(name)': {
+    hasError: true,
+    errorType: 'SyntaxError',
+    errorLine: 1,
+    errorMessage: 'unterminated string literal',
+    language: 'Python',
+    severity: 'Error',
+    whatHappened: 'SyntaxError — unterminated string literal.',
+    whyDidItHappen: 'The string on line 1 is missing its closing double quote (").',
+    howCanIFixIt: 'Add a closing double quote (") after Aftab.',
+    suggestedSolutionSummary: 'Closed the string literal with a double quote.',
+    solution: {
+      before: 'name = "Aftab\nprint(name)',
+      after: 'name = "Aftab"\nprint(name)',
+    },
+    confidence: 'High',
+  },
+
+  'def greet():\nprint("Hello")': {
+    hasError: true,
+    errorType: 'IndentationError',
+    errorLine: 2,
+    errorMessage: "expected an indented block after function definition on line 1",
+    language: 'Python',
+    severity: 'Error',
+    whatHappened: 'IndentationError — expected an indented block.',
+    whyDidItHappen: 'Python requires code inside a function body to be indented with 4 spaces.',
+    howCanIFixIt: 'Indent the print() call inside the greet() function.',
+    suggestedSolutionSummary: 'Indented line 2 with 4 spaces.',
+    solution: {
+      before: 'def greet():\nprint("Hello")',
+      after: 'def greet():\n    print("Hello")',
+    },
+    confidence: 'High',
+  },
+
+  'x = 10\nprint(y)': {
+    hasError: true,
+    errorType: 'NameError',
+    errorLine: 2,
+    errorMessage: "name 'y' is not defined",
+    language: 'Python',
+    severity: 'Error',
+    whatHappened: "NameError — name 'y' is not defined.",
+    whyDidItHappen: "The variable 'y' was not declared or assigned a value before being used.",
+    howCanIFixIt: "Change 'y' to the defined variable 'x', or define 'y = 10'.",
+    suggestedSolutionSummary: "Replaced undefined 'y' with the defined variable 'x'.",
+    solution: {
+      before: 'x = 10\nprint(y)',
+      after: 'x = 10\nprint(x)',
+    },
+    confidence: 'High',
+  },
+
+  'age = "25"\ntotal = age + 5\nprint(total)': {
+    hasError: true,
     errorType: 'TypeError',
+    errorLine: 2,
+    errorMessage: 'can only concatenate str (not "int") to str',
+    language: 'Python',
+    severity: 'Error',
+    whatHappened: 'TypeError — can only concatenate str (not "int") to str.',
+    whyDidItHappen: "You cannot add an integer (5) directly to a string (\"25\").",
+    howCanIFixIt: "Convert 'age' to an integer using int(age) before adding 5.",
+    suggestedSolutionSummary: "Converted age to an integer using int(age).",
+    solution: {
+      before: 'age = "25"\ntotal = age + 5\nprint(total)',
+      after: 'age = "25"\ntotal = int(age) + 5\nprint(total)',
+    },
+    confidence: 'High',
+  },
+
+  'x = 10\ny = 20\nprint(x +)': {
+    hasError: true,
+    errorType: 'SyntaxError',
+    errorLine: 3,
+    errorMessage: 'invalid syntax',
+    language: 'Python',
+    severity: 'Error',
+    whatHappened: 'SyntaxError — invalid syntax with incomplete addition operator.',
+    whyDidItHappen: "The '+' operator expects a second operand to add.",
+    howCanIFixIt: "Add the variable 'y' after '+', e.g. print(x + y).",
+    suggestedSolutionSummary: "Completed addition expression with y.",
+    solution: {
+      before: 'x = 10\ny = 20\nprint(x +)',
+      after: 'x = 10\ny = 20\nprint(x + y)',
+    },
+    confidence: 'High',
+  },
+
+  'name = "Aftab"\nprint(name)': {
+    hasError: false,
+    errorType: 'No Errors Detected',
+    errorLine: null,
+    errorMessage: null,
+    language: 'Python',
+    severity: 'Success',
+    whatHappened: 'The code is correct.',
+    whyDidItHappen: 'No syntax or runtime errors were found in this code.',
+    howCanIFixIt: 'No changes needed. Your code is directly runnable.',
+    suggestedSolutionSummary: 'Code is correct and runs without errors.',
+    solution: {
+      before: 'name = "Aftab"\nprint(name)',
+      after: 'name = "Aftab"\nprint(name)',
+    },
+    confidence: 'Verified',
+  },
+
+  'const user = undefined;\nconsole.log(user.name);': {
+    hasError: true,
+    errorType: 'TypeError',
+    errorLine: 2,
+    errorMessage: "Cannot read properties of undefined (reading 'name')",
     language: 'JavaScript',
     severity: 'Error',
-    whatHappened: "You tried to access a property ('name') from an object reference that is currently undefined.",
-    whyDidItHappen: "The object you expected to contain 'name' was not initialized, returned undefined from an async call, or does not exist.",
-    howCanIFixIt: "Check that the object exists before accessing its property, or use optional chaining (?.) with a default value.",
-    suggestedSolutionSummary: "Use optional chaining (?.) and nullish coalescing (??) to guard property access and provide a safe fallback value.",
+    whatHappened: "TypeError — Cannot read properties of undefined (reading 'name').",
+    whyDidItHappen: "You tried to access '.name' on 'user', which is undefined.",
+    howCanIFixIt: "Use optional chaining (user?.name) to safely read property.",
+    suggestedSolutionSummary: "Used optional chaining (?.) on user.name.",
     solution: {
-      before: `// Problematic: Accessing nested property on uninitialized object
-const user = undefined;
-
-// This line throws: TypeError: Cannot read properties of undefined (reading 'name')
-console.log(user.profile.name);`,
-      after: `// Full corrected code with optional chaining & default fallback:
-const user = undefined;
-
-// Optional chaining (?.) safely short-circuits to undefined instead of crashing
-const userName = user?.profile?.name ?? 'Default Guest';
-
-console.log('User Name:', userName);`,
-    },
-    confidence: 'High',
-  },
-  "NameError: name 'pd' is not defined": {
-    errorType: 'NameError',
-    language: 'Python',
-    severity: 'Error',
-    whatHappened: "Python tried to use the identifier 'pd', but it has not been defined or imported in this script.",
-    whyDidItHappen: "You are attempting to use Pandas via the standard abbreviation 'pd', but forgot to import the library first.",
-    howCanIFixIt: "Add 'import pandas as pd' at the very top of your Python file.",
-    suggestedSolutionSummary: "Import pandas with the alias pd and initialize data.",
-    solution: {
-      before: `# Problematic: Using pandas without importing it
-data = {'id': [1, 2], 'name': ['Alice', 'Bob']}
-
-# This throws NameError: name 'pd' is not defined
-df = pd.DataFrame(data)
-print(df)`,
-      after: `# Full corrected working code:
-import pandas as pd
-
-# Sample structured data
-data = {
-    'id': [1, 2, 3],
-    'name': ['Alice', 'Bob', 'Charlie']
-}
-
-# Successfully create DataFrame using imported pandas alias
-df = pd.DataFrame(data)
-print(df.head())`,
-    },
-    confidence: 'High',
-  },
-  'IndexError: list index out of range': {
-    errorType: 'IndexError',
-    language: 'Python',
-    severity: 'Error',
-    whatHappened: "You attempted to access an item at an index outside the boundaries of the list.",
-    whyDidItHappen: "The requested index is greater than or equal to the total length of the list, or the list is empty.",
-    howCanIFixIt: "Verify that the list is not empty and that the index is within range: 0 <= index < len(list).",
-    suggestedSolutionSummary: "Add a boundary length check or check if the list contains elements before indexing.",
-    solution: {
-      before: `# Problematic: Direct index access on list without boundary check
-numbers = [10, 20, 30]
-
-# Accessing index 5 causes IndexError: list index out of range
-target = numbers[5]
-print(target)`,
-      after: `# Full corrected code with boundary check and fallback:
-numbers = [10, 20, 30]
-target_index = 5
-
-# Safe boundary check before accessing
-if 0 <= target_index < len(numbers):
-    target = numbers[target_index]
-    print(f"Found element at index {target_index}: {target}")
-else:
-    print(f"Index {target_index} is out of bounds. Valid range: 0 to {len(numbers) - 1}.")`,
-    },
-    confidence: 'High',
-  },
-  "KeyError: 'age'": {
-    errorType: 'KeyError',
-    language: 'Python',
-    severity: 'Error',
-    whatHappened: "You tried to look up the key 'age' in a dictionary, but that key does not exist.",
-    whyDidItHappen: "Direct bracket indexing user['age'] raises a KeyError when the key was never stored in the dictionary.",
-    howCanIFixIt: "Use the dictionary .get('age', default_value) method to retrieve the value safely without raising an exception.",
-    suggestedSolutionSummary: "Use dict.get() with a default fallback to prevent KeyError when keys are missing.",
-    solution: {
-      before: `# Problematic: Direct bracket access on missing dictionary key
-user_profile = {
-    'username': 'coder123',
-    'email': 'coder@example.com'
-}
-
-# Raises KeyError: 'age'
-user_value = user_profile['age']
-print(user_value)`,
-      after: `# Full corrected code with dict.get() and default value:
-user_profile = {
-    'username': 'coder123',
-    'email': 'coder@example.com'
-}
-
-# Safely access key; returns fallback value if key does not exist
-user_value = user_profile.get('age', 'Not provided')
-print(f"User age: {user_value}")`,
+      before: 'const user = undefined;\nconsole.log(user.name);',
+      after: 'const user = undefined;\nconsole.log(user?.name);',
     },
     confidence: 'High',
   },

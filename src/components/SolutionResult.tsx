@@ -58,12 +58,14 @@ export const SolutionResult: React.FC<SolutionResultProps> = ({
   };
 
   // Severity styling
-  const severityBadgeColor =
-    explanation.severity.toLowerCase().includes('critical') || explanation.severity.toLowerCase().includes('fatal')
-      ? 'bg-red-500/15 text-red-300 border-red-500/30'
-      : explanation.severity.toLowerCase().includes('warning')
-      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-      : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+  const isClean = explanation.hasError === false || explanation.severity.toLowerCase().includes('success');
+  const severityBadgeColor = isClean
+    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+    : explanation.severity.toLowerCase().includes('critical') || explanation.severity.toLowerCase().includes('fatal')
+    ? 'bg-red-500/15 text-red-300 border-red-500/30'
+    : explanation.severity.toLowerCase().includes('warning')
+    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+    : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
 
   return (
     <div className="w-full bg-[#12151b] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl shadow-black/60 transition-all">
@@ -225,12 +227,12 @@ export const SolutionResult: React.FC<SolutionResultProps> = ({
           {/* Before & After Code Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Before Code Panel */}
-            <div className="flex flex-col bg-[#07090c] border border-red-500/25 rounded-lg overflow-hidden">
-              <div className="px-3 py-1.5 bg-red-950/30 border-b border-red-500/20 flex items-center justify-between text-[11px] font-mono">
-                <span className="text-red-400 font-semibold uppercase tracking-wider">Before</span>
-                <span className="text-zinc-500">Problematic Code</span>
+            <div className={`flex flex-col bg-[#07090c] border rounded-lg overflow-hidden ${isClean ? 'border-zinc-800' : 'border-red-500/25'}`}>
+              <div className={`px-3 py-1.5 border-b flex items-center justify-between text-[11px] font-mono ${isClean ? 'bg-zinc-900/60 border-zinc-800 text-zinc-300' : 'bg-red-950/30 border-red-500/20 text-red-400'}`}>
+                <span className="font-semibold uppercase tracking-wider">{isClean ? 'Original' : 'Before'}</span>
+                <span className="text-zinc-500">{isClean ? 'Input Code' : 'Problematic Code'}</span>
               </div>
-              <div className="p-3 font-mono text-xs sm:text-sm text-red-200/90 overflow-x-auto whitespace-pre leading-relaxed">
+              <div className={`p-3 font-mono text-xs sm:text-sm overflow-x-auto whitespace-pre leading-relaxed ${isClean ? 'text-zinc-200' : 'text-red-200/90'}`}>
                 <code>{explanation.solution.before}</code>
               </div>
             </div>
@@ -240,7 +242,7 @@ export const SolutionResult: React.FC<SolutionResultProps> = ({
               <div className="px-3 py-1.5 bg-emerald-950/30 border-b border-emerald-500/30 flex items-center justify-between text-[11px] font-mono">
                 <span className="text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  Full Corrected Code
+                  {isClean ? 'Verified Runnable Code' : 'Corrected Code'}
                 </span>
                 <button
                   type="button"

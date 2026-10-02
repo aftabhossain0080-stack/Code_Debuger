@@ -1,22 +1,34 @@
-export type SupportedLanguage = 'JavaScript' | 'Python' | 'Java' | 'C++' | 'C' | 'Other';
+export type SupportedLanguage = 'Python' | 'JavaScript' | 'Java' | 'C++' | 'C' | 'Other';
 
-export interface GeminiErrorResponse {
-  error_type: string;
-  severity: string;
-  what_happened: string;
-  why_it_happened: string;
-  how_to_fix: string;
-  suggested_solution?: string;
-  before_code: string;
-  after_code: string;
-  confidence: string;
+export interface DebugResponse {
+  hasError: boolean;
+  errorType: string | null;
+  errorLine: number | null;
+  errorMessage: string | null;
+  explanation: string;
+  correctedCode: string;
+  modelUsed?: string;
   model_used?: string;
+  error_type?: string;
+  severity?: string;
+  what_happened?: string;
+  why_it_happened?: string;
+  how_to_fix?: string;
+  suggested_solution?: string;
+  before_code?: string;
+  after_code?: string;
+  confidence?: string;
 }
 
+export type GeminiErrorResponse = DebugResponse;
+
 export interface ErrorExplanation {
+  hasError?: boolean;
   errorType: string;
+  errorLine?: number | null;
+  errorMessage?: string | null;
   language: SupportedLanguage;
-  severity: 'Error' | 'Critical' | 'Warning' | string;
+  severity: 'Error' | 'Critical' | 'Warning' | 'Success' | string;
   whatHappened: string;
   whyDidItHappen: string;
   howCanIFixIt: string;

@@ -125,7 +125,7 @@ export const ErrorInput: React.FC<ErrorInputProps> = ({
             value={errorText}
             onChange={(e) => onChangeErrorText(e.target.value)}
             disabled={isAnalyzing}
-            placeholder="TypeError: Cannot read properties of undefined (reading 'name')"
+            placeholder={`name = "Aftab"\nprint(name`}
             className="w-full h-full min-h-[160px] sm:min-h-[190px] p-3.5 bg-transparent font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-600 outline-none resize-y leading-6 border-0 focus:ring-0 disabled:opacity-60"
             spellCheck={false}
           />

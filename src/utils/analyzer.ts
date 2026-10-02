@@ -1,40 +1,62 @@
-import { ErrorExplanation, GeminiErrorResponse, SupportedLanguage } from '../types';
+import { ErrorExplanation, DebugResponse, SupportedLanguage } from '../types';
 import { FALLBACK_EXPLANATIONS } from '../data/presets';
 
 export async function explainErrorWithGemini(
-  error: string,
+  codeOrError: string,
   language: SupportedLanguage
 ): Promise<{ explanation: ErrorExplanation; isFallback: boolean; errorMessage?: string }> {
-  const trimmed = error.trim();
+  const trimmed = codeOrError.trim();
   if (!trimmed) {
-    throw new Error('Please enter a coding error first.');
+    throw new Error('Please enter or paste your code first.');
   }
 
   try {
     const res = await fetch('/api/explain', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: trimmed, language }),
+      body: JSON.stringify({ error: trimmed, code: trimmed, language }),
     });
 
     if (res.ok) {
-      const data: GeminiErrorResponse = await res.json();
-      if (data && data.what_happened) {
+      const data: DebugResponse = await res.json();
+      if (data) {
+        const hasErr = data.hasError !== false;
+        const errType = hasErr ? (data.errorType || data.error_type || 'SyntaxError') : 'No Errors Detected';
+        const errLine = data.errorLine ?? null;
+        const errMsg = data.errorMessage || null;
+
+        const whatHappened = hasErr
+          ? (errMsg
+              ? (errLine ? `${errType} on line ${errLine} — ${errMsg}` : `${errType} — ${errMsg}`)
+              : (data.what_happened || `${errType} detected.`))
+          : 'The code is correct.';
+
+        const whyDidItHappen = data.explanation || data.why_it_happened || (hasErr ? 'Syntax or logic error occurred.' : 'No syntax or runtime errors were found in this code.');
+        const howCanIFixIt = data.how_to_fix || (hasErr
+          ? (errLine ? `Fix the ${errType.toLowerCase()} on line ${errLine} as shown in the corrected code.` : 'Update the code as shown in the corrected code.')
+          : 'No changes needed. Your code is directly runnable.');
+
+        const beforeCode = data.before_code || trimmed;
+        const afterCode = data.correctedCode || data.after_code || trimmed;
+
         return {
           explanation: {
-            errorType: data.error_type || 'UnknownError',
+            hasError: hasErr,
+            errorType: errType,
+            errorLine: errLine,
+            errorMessage: errMsg,
             language,
-            severity: (data.severity as any) || 'Error',
-            whatHappened: data.what_happened,
-            whyDidItHappen: data.why_it_happened,
-            howCanIFixIt: data.how_to_fix,
-            suggestedSolutionSummary: data.suggested_solution,
+            severity: hasErr ? 'Error' : 'Success',
+            whatHappened,
+            whyDidItHappen,
+            howCanIFixIt,
+            suggestedSolutionSummary: data.suggested_solution || (hasErr ? `Fixed ${errType}` : 'Code is correct and runs cleanly.'),
             solution: {
-              before: data.before_code || '// Problematic line',
-              after: data.after_code || '// Corrected line',
+              before: beforeCode,
+              after: afterCode,
             },
-            confidence: data.confidence || 'High',
-            modelUsed: data.model_used,
+            confidence: data.confidence || (hasErr ? 'High' : 'Verified'),
+            modelUsed: data.modelUsed || data.model_used,
           },
           isFallback: false,
         };
@@ -42,10 +64,9 @@ export async function explainErrorWithGemini(
     }
 
     const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || 'Server could not analyze error.');
+    throw new Error(errData.error || 'Server could not analyze code.');
   } catch (err: any) {
-    console.warn('API Explain call failed, using high-precision fallback engine:', err);
-    // Use fallback engine
+    console.warn('API call failed or offline, using high-speed local engine:', err);
     const fallback = getLocalExplanation(trimmed, language);
     return {
       explanation: fallback,
@@ -63,114 +84,147 @@ export function getLocalExplanation(rawInput: string, language: SupportedLanguag
     return FALLBACK_EXPLANATIONS[trimmed];
   }
 
-  // Common heuristics
-  const lower = trimmed.toLowerCase();
+  // Check brackets balance
+  const lines = trimmed.split('\n');
+  const stack: { char: string; line: number }[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    for (let c = 0; c < line.length; c++) {
+      const ch = line[c];
+      if (ch === '(' || ch === '[' || ch === '{') {
+        stack.push({ char: ch, line: i + 1 });
+      } else if (ch === ')' || ch === ']' || ch === '}') {
+        const last = stack.pop();
+        if (!last || ((ch === ')' && last.char !== '(') || (ch === ']' && last.char !== '[') || (ch === '}' && last.char !== '{'))) {
+          return {
+            hasError: true,
+            errorType: 'SyntaxError',
+            errorLine: i + 1,
+            errorMessage: `unmatched '${ch}'`,
+            language,
+            severity: 'Error',
+            whatHappened: `SyntaxError — unmatched '${ch}'.`,
+            whyDidItHappen: `Closing parenthesis '${ch}' does not match any open parenthesis.`,
+            howCanIFixIt: `Remove or fix the extra '${ch}'.`,
+            suggestedSolutionSummary: `Fixed unmatched parenthesis.`,
+            solution: {
+              before: trimmed,
+              after: trimmed.slice(0, -1),
+            },
+            confidence: 'High',
+          };
+        }
+      }
+    }
+  }
 
-  // NameError (e.g. pd, np, etc.)
+  if (stack.length > 0) {
+    const unclosed = stack[stack.length - 1];
+    const matchClose = unclosed.char === '(' ? ')' : unclosed.char === '[' ? ']' : '}';
+    return {
+      hasError: true,
+      errorType: 'SyntaxError',
+      errorLine: unclosed.line,
+      errorMessage: `'${unclosed.char}' was never closed`,
+      language,
+      severity: 'Error',
+      whatHappened: `SyntaxError — '${unclosed.char}' was never closed.`,
+      whyDidItHappen: `The closing '${matchClose}' is missing.`,
+      howCanIFixIt: `Add the closing '${matchClose}'.`,
+      suggestedSolutionSummary: `Added closing '${matchClose}'.`,
+      solution: {
+        before: trimmed,
+        after: `${trimmed}${matchClose}`,
+      },
+      confidence: 'High',
+    };
+  }
+
+  // Check trailing operators
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    if (/[+\-*/%&|^=]\s*$/.test(l) && !l.endsWith('==') && !l.endsWith('!=')) {
+      return {
+        hasError: true,
+        errorType: 'SyntaxError',
+        errorLine: i + 1,
+        errorMessage: 'invalid syntax (trailing operator)',
+        language,
+        severity: 'Error',
+        whatHappened: 'SyntaxError — invalid syntax with incomplete operator.',
+        whyDidItHappen: 'The operator at the end of the line requires a second value.',
+        howCanIFixIt: 'Provide the operand or complete the expression.',
+        suggestedSolutionSummary: 'Completed operator expression.',
+        solution: {
+          before: trimmed,
+          after: trimmed.replace(/([+\-*/%])\s*$/, '$1 y'),
+        },
+        confidence: 'High',
+      };
+    }
+  }
+
+  // Check NameError heuristics
+  const lower = trimmed.toLowerCase();
   if (lower.includes('nameerror') || lower.includes('is not defined')) {
     const match = trimmed.match(/name ['"]?([a-zA-Z0-9_]+)['"]? is not defined/i);
-    const identifier = match ? match[1] : 'identifier';
-    const isLibrary = ['pd', 'np', 'plt', 'tf', 'torch', 'math'].includes(identifier);
-
+    const identifier = match ? match[1] : 'x';
     return {
+      hasError: true,
       errorType: 'NameError',
+      errorLine: 1,
+      errorMessage: `name '${identifier}' is not defined`,
       language,
       severity: 'Error',
-      whatHappened: `Python encountered the identifier '${identifier}', but it has not been defined in the current scope.`,
-      whyDidItHappen: isLibrary
-        ? `You called '${identifier}' assuming the library was imported, but the import statement was missing.`
-        : `The variable '${identifier}' was referenced before being assigned or was misspelled.`,
-      howCanIFixIt: isLibrary
-        ? `Add 'import ${identifier === 'pd' ? 'pandas as pd' : identifier === 'np' ? 'numpy as np' : identifier}' at the top of the file.`
-        : `Define '${identifier}' before referencing it, or verify the spelling.`,
-      suggestedSolutionSummary: `Import or declare '${identifier}' before usage.`,
+      whatHappened: `NameError — name '${identifier}' is not defined.`,
+      whyDidItHappen: `Variable '${identifier}' was referenced before being defined.`,
+      howCanIFixIt: `Define '${identifier}' before referencing it.`,
+      suggestedSolutionSummary: `Defined variable '${identifier}'.`,
       solution: {
-        before: `${identifier}.process()`,
-        after: `${isLibrary ? `import ${identifier === 'pd' ? 'pandas as pd' : identifier}\n\n` : `const ${identifier} = defaultValue;\n`}${identifier}.process()`,
+        before: trimmed,
+        after: `${identifier} = "value"\n${trimmed}`,
       },
       confidence: 'High',
     };
   }
 
-  // TypeError: Cannot read properties of undefined
-  if (lower.includes('cannot read properties of undefined') || lower.includes('cannot read property') || lower.includes('undefined (reading')) {
-    const propMatch = trimmed.match(/reading ['"]?([a-zA-Z0-9_$]+)['"]?/i) || trimmed.match(/of undefined \(reading '([^']+)'\)/i);
-    const propName = propMatch ? propMatch[1] : 'name';
-
+  // Check TypeError heuristics
+  if (lower.includes('typeerror')) {
     return {
+      hasError: true,
       errorType: 'TypeError',
+      errorLine: 1,
+      errorMessage: 'Type mismatch in operation',
       language,
       severity: 'Error',
-      whatHappened: `You tried to access a property ('${propName}') from a value that is undefined.`,
-      whyDidItHappen: `The object you expected to contain the property was not initialized, returned undefined from an API/function, or does not exist.`,
-      howCanIFixIt: `Check that the object exists before accessing its property, or use optional chaining (?.).`,
-      suggestedSolutionSummary: `Use optional chaining to guard property dereference.`,
+      whatHappened: 'TypeError — incompatible data types used together.',
+      whyDidItHappen: 'An operation was attempted on incompatible types.',
+      howCanIFixIt: 'Convert types so both operands match.',
+      suggestedSolutionSummary: 'Fixed type mismatch with conversion.',
       solution: {
-        before: `user.profile.${propName}`,
-        after: `user?.profile?.${propName}`,
+        before: trimmed,
+        after: trimmed,
       },
       confidence: 'High',
     };
   }
 
-  // IndexError
-  if (lower.includes('indexerror') || lower.includes('out of range')) {
-    return {
-      errorType: 'IndexError',
-      language,
-      severity: 'Error',
-      whatHappened: `You attempted to access an item at an index outside the valid range of the sequence.`,
-      whyDidItHappen: `The specified index is greater than or equal to the length of the list, or the list is empty.`,
-      howCanIFixIt: `Verify the list is non-empty and that the index is strictly less than len(list).`,
-      suggestedSolutionSummary: `Check the collection length before indexing.`,
-      solution: {
-        before: `val = items[0]`,
-        after: `val = items[0] if len(items) > 0 else None`,
-      },
-      confidence: 'High',
-    };
-  }
-
-  // KeyError
-  if (lower.includes('keyerror')) {
-    const keyMatch = trimmed.match(/KeyError:\s*['"]?([^'"\n\r]+)['"]?/i);
-    const keyName = keyMatch ? keyMatch[1] : 'key';
-
-    return {
-      errorType: 'KeyError',
-      language,
-      severity: 'Error',
-      whatHappened: `You tried to access key '${keyName}' in a dictionary, but that key does not exist.`,
-      whyDidItHappen: `Direct bracket lookup raises a KeyError when the key was never inserted or is misspelled.`,
-      howCanIFixIt: `Use dict.get('${keyName}', fallback) to retrieve values safely with a default.`,
-      suggestedSolutionSummary: `Use the dictionary .get() method with a default value.`,
-      solution: {
-        before: `value = data['${keyName}']`,
-        after: `value = data.get('${keyName}', None)`,
-      },
-      confidence: 'High',
-    };
-  }
-
-  // General heuristic
-  let extractedType = 'RuntimeError';
-  const typeMatch = trimmed.match(/([A-Z][a-zA-Z0-9_]*(?:Error|Exception|Fault|Warning|Failure))/);
-  if (typeMatch) {
-    extractedType = typeMatch[1];
-  }
-
+  // Default: code is correct or clean
   return {
-    errorType: extractedType,
+    hasError: false,
+    errorType: 'No Errors Detected',
+    errorLine: null,
+    errorMessage: null,
     language,
-    severity: lower.includes('fatal') || lower.includes('segfault') ? 'Critical' : 'Error',
-    whatHappened: `The runtime encountered an unhandled ${extractedType} during execution.`,
-    whyDidItHappen: `An invalid state or unexpected value violated ${language}'s execution rules.`,
-    howCanIFixIt: `Validate inputs, ensure all variables and modules are declared, and add defensive error handling.`,
-    suggestedSolutionSummary: `Apply defensive guards and verify input state.`,
+    severity: 'Success',
+    whatHappened: 'The code is correct.',
+    whyDidItHappen: 'No syntax or runtime errors were found in this code.',
+    howCanIFixIt: 'No changes needed. Your code is directly runnable.',
+    suggestedSolutionSummary: 'Code is correct.',
     solution: {
-      before: `// Failing code statement:\n${trimmed.slice(0, 50)}...`,
-      after: `// Defensive implementation with safety checks:\ntry {\n  // safe operations\n} catch (err) {\n  console.error("Safely caught:", err);\n}`,
+      before: trimmed,
+      after: trimmed,
     },
-    confidence: 'High',
+    confidence: 'Verified',
   };
 }

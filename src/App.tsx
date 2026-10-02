@@ -21,16 +21,16 @@ import {
 } from './utils/storage';
 import { getFileExtension } from './utils/export';
 
-const INITIAL_ERROR = "TypeError: Cannot read properties of undefined (reading 'name')";
+const INITIAL_CODE = 'name = "Aftab"\nprint(name';
 
 export default function App() {
   const [themeMode, setThemeMode] = useState<'charcoal' | 'midnight'>('charcoal');
-  const [errorText, setErrorText] = useState<string>(INITIAL_ERROR);
-  const [language, setLanguage] = useState<SupportedLanguage>('JavaScript');
+  const [errorText, setErrorText] = useState<string>(INITIAL_CODE);
+  const [language, setLanguage] = useState<SupportedLanguage>('Python');
   const [explanation, setExplanation] = useState<ErrorExplanation | null>(
-    FALLBACK_EXPLANATIONS[INITIAL_ERROR] || null
+    FALLBACK_EXPLANATIONS[INITIAL_CODE] || null
   );
-  const [selectedDemoId, setSelectedDemoId] = useState<string>('js-typeerror');
+  const [selectedDemoId, setSelectedDemoId] = useState<string>('py-missing-bracket');
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string>('');
   const [apiNotice, setApiNotice] = useState<string | null>(null);
@@ -46,14 +46,14 @@ export default function App() {
     const loadedHist = loadHistory();
     const loadedSaved = loadSavedFiles();
 
-    // If history is completely empty, seed with initial JavaScript TypeError diagnosis
-    if (loadedHist.length === 0 && FALLBACK_EXPLANATIONS[INITIAL_ERROR]) {
+    // If history is completely empty, seed with initial diagnostic demo
+    if (loadedHist.length === 0 && FALLBACK_EXPLANATIONS[INITIAL_CODE]) {
       const initialItem: HistoryItem = {
         id: 'init-demo-1',
         timestamp: Date.now() - 60000,
-        rawError: INITIAL_ERROR,
-        language: 'JavaScript',
-        explanation: FALLBACK_EXPLANATIONS[INITIAL_ERROR],
+        rawError: INITIAL_CODE,
+        language: 'Python',
+        explanation: FALLBACK_EXPLANATIONS[INITIAL_CODE],
       };
       setHistory([initialItem]);
       saveHistory([initialItem]);
