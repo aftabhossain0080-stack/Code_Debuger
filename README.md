@@ -1,20 +1,50 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# 🛠️ Code Debugger
 
-# Run and deploy your AI Studio app
+An AI-powered developer tool that analyzes code errors, explains what went wrong, and helps generate corrected code.
 
-This contains everything you need to run your app locally.
+### 🚀 Live Demo
 
-View your app in AI Studio: https://ai.studio/apps/466498a3-92d1-48a5-9bbf-fcf7ee0be008
+**[Code Debugger](https://code-debuger-vwdn.vercel.app/)**
 
-## Run Locally
+## ✨ Features
 
-**Prerequisites:**  Node.js
+* 🔍 Detect code errors
+* 💡 Explain errors in simple language
+* 🛠️ Generate corrected code
+* 📋 Easy code input and output
+* ⚡ Fast, developer-friendly interface
+* 🌐 Live web application
 
+## 🧠 How It Works
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```text
+Enter Code
+    ↓
+Analyze Error
+    ↓
+Explain Problem
+    ↓
+Generate Fix
+    ↓
+Run / Review Corrected Code
+```
+
+## 🛠️ Tech Stack
+
+* React
+* Vite
+* JavaScript
+* Tailwind CSS
+* AI-powered code analysis
+
+## 🎯 Use Case
+
+Code Debugger is designed to help developers and students quickly understand programming errors instead of only receiving confusing compiler or runtime messages.
+
+## 🚀 Live Application
+
+[Open Code Debugger](https://code-debuger-vwdn.vercel.app/)
+
+---
+
+**Built for faster debugging and better understanding of code.**
